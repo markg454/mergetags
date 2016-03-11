@@ -18,10 +18,12 @@ public class Tag {
 
 	private static boolean debug				= false;
 	private static TagDAO tagDAO				= null;
-	private static String concern				= null;
+	private static String vocabulary			= null;
 	private static int id						= 0;
 	private static String tag					= null;
-	private static String keyword				= null;
+	private static String synonym				= null;
+	private static String parentTerm			= null;
+	private static String term					= null;
     private static YLogger logger				= null;
 	
 	//*********************************************************************************************
@@ -44,26 +46,46 @@ public class Tag {
     	return tagDAO;
     }
 
-    // set concern
-    public void setConcern(String c) {
-    	concern = c;
+    // set vocabulary
+    public void setVocabulary(String c) {
+    	vocabulary = c;
     }
     
-    // get concern
-    public String getConcern() {
-    	return concern;
+    // get vocabulary
+    public String getVocabulary() {
+    	return vocabulary;
     }
     
-    // set keyword
-    public void setKeyword(String k) {
-    	keyword = k;
+    // set synonym
+    public void setSynonym(String k) {
+    	synonym = k;
     }
     
-    // get keyword
-    public String getKeyword() {
-    	return keyword;
+    // get synonym
+    public String getSynonym() {
+    	return synonym;
+    }
+ 
+    // set parent term
+    public void setParentTerm(String t) {
+    	parentTerm = t;
     }
     
+    // get parent term
+    public String getParentTerm() {
+    	return parentTerm;
+    }
+ 
+    // set term
+    public void setTerm(String t) {
+    	term = t;
+    }
+    
+    // get term
+    public String getTerm() {
+    	return term;
+    }
+ 
     // set tag
     public void setTag(String t) {
     	tag = t;
@@ -103,47 +125,5 @@ public class Tag {
 	public YLogger getLogger() {
 		return logger;
 	}
-
-	public boolean commit() throws IOException {
-
-        boolean returnVal = false;
-        try {
-            tagDAO.commit(this);
-            returnVal = true;
-        } catch (SQLException e) {
-                ;
-        }
-
-        return returnVal;
-
-	}
-	
-    public boolean load() {
-
-    	boolean returnVal = false;
-    	
-    	// read data from the database
-    	try {
-    		
-    		//if (tagDAO.read(this,ownerAlphaCode))
-    		if (tagDAO.read(this,id))
-    			returnVal = true;
-    		else {
-    			if (debug) {
-    	    		System.out.println("Tag: load failed for: " + id + "\n");
-    	    	}
-    		}
-    		
-    	} catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-    	if (debug) {
-    		System.out.println("Tag: id: " + id + "\n");
-    	}
-    	
-    	return returnVal;
-    	
-    }
      
 }

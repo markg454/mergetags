@@ -3,10 +3,7 @@ package com.yayhi.tags;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,7 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.Ostermiller.util.ExcelCSVParser;
-import com.yayhi.dao.DAO;
+import com.yayhi.dao.TagDAO;
 import com.yayhi.utils.YLogger;
 import com.yayhi.utils.YProperties;
 
@@ -63,62 +60,6 @@ public class Merger {
 		return empty;
 		
     }
-	
-	// get corresponding tag for given keyword, if any
-	public static String getTag(DAO dao,String k) throws SQLException {
-		
-		String tag 		= null;
-		Statement stmt 	= null;
-	   	ResultSet rset 	= null;
-	   	dao.open();
-		Connection con = dao.getDAOConnection();
-		
-		try {	
-
-		   	String query = "SELECT tag FROM tag_map WHERE keyword = \"" + k.trim() + "\"";
-		
-		   	if (debug) {
-		   		System.out.print(query);
-		   	}
-
-		   	stmt = con.createStatement();
-			
-		   	rset = stmt.executeQuery(query);
-		   	
-			while (rset.next()) {
-				tag = rset.getString("tag");
-		    }
-			
-			if (tag != null && debug) {
-		   		System.out.println("keyword: " + k.trim() + " found tag: " + tag);
-		   	}
-			rset.close();
-
-		} catch(SQLException se){
-	      //Handle errors for JDBC
-	      se.printStackTrace();
-		} catch(Exception e){
-	      //Handle errors for Class.forName
-	      e.printStackTrace();
-		} finally {
-	      //finally block used to close resources
-	      try {
-	         if (stmt != null) {
-	            stmt.close();
-	         }
-	      } catch(SQLException se2) {
-    	  ;
-	      } // nothing we can do
-      
-		}//end finally try
-		
-		con.close();
-		
-		dao.close();
-		
-		return tag;
-		
-	}
 
     /**
      * Sole entry point to the class and application.
@@ -311,30 +252,23 @@ public class Merger {
     	CSVFileWriter fw = new CSVFileWriter(outputCSVFilePath);
     	
 		// write the header column data
-        fw.write(new String[] { "path","title","tags","keywords","html" });
+        fw.write(new String[] { "id","tags","keywords" });
 		
 		int tCount = 1; //    used to count number of operations
 		for (int i = 0; i < lines.length; i++) {
 	
 			hasErrors = false;
 			
-			// path
-			String pathStr = lines[i][0];
-			
-			// title
-			String titleStr = lines[i][1];
-			
-			// html
-			String htmlStr = lines[i][2];
+			// id
+			String idStr = lines[i][0];
 			
 			// keywords
-			String keywordsStr = lines[i][3];
+			String keywordsStr = lines[i][1];
 			
 			if (debug) {
 	    		
 				System.out.println("-----------");
-				System.out.println("concernStr: " + pathStr.trim());
-				System.out.println("tagStr: " + titleStr.trim());
+				System.out.println("idStr: " + idStr.trim());
 				System.out.println("keywordsStr: " + keywordsStr.trim());
 		    	
 			}
@@ -349,7 +283,7 @@ public class Merger {
 				}
 
 			   	// create database connection object
-				DAO dao = new DAO();
+				TagDAO  dao = new TagDAO();
 
 				//*********************************************************************************************
 	            //* Create list of tags for given keywords for the current title
@@ -361,34 +295,44 @@ public class Merger {
 						System.out.println("keyword: " + keyword.trim());
 					}
 				
-					String tag = getTag(dao,keyword);
+					// get terms for synonym, if any
+					ArrayList<String> termList = dao.getTerms(keyword.trim().replace("'", "\\'"));
 					
-					// add found tag
-					if (tag != null) {
+					// add found terms
+					if (!termList.isEmpty()) {
+						
+						String pt =  termList.get(0); // parent term
+						String t =  termList.get(1); // term
 						
 						if (debug) {
-							System.out.println("\nkeyword: " + keyword.trim() + " tag found: " + tag);
+							System.out.println("\nkeyword: " + keyword.trim() + " parent found: " + pt + " term found: " + t);
 						}
-						// make sure not include a duplicate
-						if (!tags.contains(tag)) {
-							tags.add(tag); // add found tag
+						
+						// make sure not include a duplicate parent term
+						if (!tags.contains(pt)) {
+							tags.add(pt); // add found parent term
 						}
+						
+						// make sure not include a duplicate term
+						if (!tags.contains(t)) {
+							tags.add(t); // add found term
+						}	
 					
+					} else {
+			    		logger.write("\tKEYWORD NOT MAPPED: " + keyword.trim());
 					}
 					
 				}	
-
 				
 				if (debug) {
-					System.out.println("path: " + pathStr + " title: " + titleStr + " keywords: " + keywordsStr + " tags: " + tags);
+					System.out.println("id: " + idStr + " keywords: " + keywordsStr + " tags: " + tags);
 				}
 				
 				StringBuilder sb = new StringBuilder();
 				int sCount = 0;
 				for (String s : tags)
 				{
-
-				    
+  
 				    if (sCount == 0) {
 				    	sb.append(s);
 				    } else {
@@ -398,16 +342,17 @@ public class Merger {
 				    sCount++;
 				}
 				
-	        	if (!fw.write(new String[] { pathStr, titleStr, sb.toString(), keywordsStr, htmlStr })) {	        		
+	        	if (!fw.write(new String[] { idStr, sb.toString(), keywordsStr })) {	        		
 	        		// send error message	        		
 	        	}
-
 				
 			}
 			
 		}
 		// close the output stream
     	fw.close();
+    	
+    	logger.close();
     	
     }
     
