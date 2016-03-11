@@ -303,6 +303,11 @@ public class Merger {
 						String pt =  termList.get(0); // parent term
 						String t =  termList.get(1); // term
 						
+						// if term empty, use the parent
+						if (t.equals("")) {
+							t = pt;
+						}
+						
 						if (debug) {
 							System.out.println("\nkeyword: " + keyword.trim() + " parent found: " + pt + " term found: " + t);
 						}
