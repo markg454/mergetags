@@ -254,7 +254,6 @@ public class Merger {
 		// write the header column data
         fw.write(new String[] { "id","tags","keywords" });
 		
-		int tCount = 1; //    used to count number of operations
 		for (int i = 0; i < lines.length; i++) {
 	
 			hasErrors = false;
